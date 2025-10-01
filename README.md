@@ -2,7 +2,7 @@
 
 <!-- Get rid of the metarepo instructions (the two sections below this) once you're done. -->
 
-# metarepo
+# wan_etal_2025_earths_future
 ## [Check out the website for instructions](https://immm-sfa.github.io/metarepo)
 `metarepo` is short for meta-repository, a GitHub repository that contains instructions to reproduce results in a published work. This repo is a template for creating your own metarepo.
 
