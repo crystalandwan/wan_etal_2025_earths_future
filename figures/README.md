@@ -1,1 +1,1 @@
-## This directory contains figures and the code to create those figures
+## This directory contains figures from the manuscript and the code to create those figures can be found on the scripts folder.
