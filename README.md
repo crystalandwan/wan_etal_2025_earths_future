@@ -1,14 +1,14 @@
 # wan_etal_2025_earths_future
 
-**your Paper Title here (once published, include a link to the text)**
+**What technical choices matter to characterize heat wave and cold snap events in support of bulk power grid reliability studies? **
 
-First Last<sup>1\*</sup>, First Last<sup>1</sup>,  and First Last<sup>1, 2</sup>
+Heng Wan<sup>1\*</sup>, Casey D. Burleyson<sup>1</sup>,  and Nathalie Voisin<sup>1, 2</sup>
 
 <sup>1 </sup>Pacific Northwest National Laboratory, Richland, WA, USA.
 
-<sup>2 </sup> Institute for Energy Analysis, Oak Ridge Associated Universities, Washington, DC, USA
+<sup>2 </sup>University of Washington, Seattle, WA 98109, USA.
 
-\* corresponding author:  email@myorg.gov
+\* corresponding author:  heng.wan@pnnl.gov
 
 ## Abstract
 _your abstract here_
