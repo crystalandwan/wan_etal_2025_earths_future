@@ -1,7 +1,7 @@
 library(tools)
 
 # Set the working directory
-setwd("C:/Users/wanh535/OneDrive - PNNL/Desktop/IM3/Heat Waves/Climate_data/historic")
+setwd("PATH_TO_NERC_LEVEL_CLIMATE_DATA")
 
 # Create the directory for heat wave library files if it does not exist
 output_dir <- "heat_wave_library"
@@ -135,3 +135,4 @@ for (scenario in scenarios) {
     }
   }
 }
+
