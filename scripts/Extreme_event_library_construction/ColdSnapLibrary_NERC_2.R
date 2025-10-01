@@ -1,7 +1,7 @@
 library(tools)
 
 # Set the working directory
-setwd("C:/Users/wanh535/OneDrive - PNNL/Desktop/IM3/Heat Waves/Climate_data/historic")
+setwd("PATH_TO_NERC_LEVEL_CLIMATE_DATA")
 
 # List of scenarios to process
 scenarios <- c("NERC_average.RData", "NERC_average_area.RData", "NERC_average_pop.RData")
@@ -178,3 +178,4 @@ for (scenario in scenarios) {
     }
   }
 }
+
