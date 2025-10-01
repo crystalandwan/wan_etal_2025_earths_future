@@ -4,7 +4,7 @@ library(abind)
 library(parallel)
 
 # Set the working directory
-setwd("C:/Users/wanh535/OneDrive - PNNL/Desktop/IM3/Heat Waves/Climate_data")
+setwd("PATH_TO_COUNTY_LEVEL_CLIMATE_DATA")
 
 # Define thresholds and column index for temperature types
 definitions <- list(
@@ -188,9 +188,9 @@ results <- parLapply(cl, event_defs, function(event_def) {
     spatial_coverage <- sum(event_results)/nrow(target_temp) * 100
     NERC_event[i, "spatial_coverage"] <- spatial_coverage
   }
-  fwrite(NERC_event, paste0("./historic/heat_wave_library/With_spatial_coverage/", 
-                            event_def))
+  fwrite(NERC_event, "PATH_TO_SAVE_DATA")
 })
+
 
 
 
