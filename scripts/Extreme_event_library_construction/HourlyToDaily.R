@@ -53,8 +53,7 @@ calculate_daily_stats <- function(files) {
 }
 
 # Set working directory
-setwd(paste0("C:/Users/wanh535/OneDrive - PNNL/Desktop/IM3/Heat Waves/", 
-             "Climate_data/historic/historic/historic_2020_2024/historic_2020_2024"))
+setwd("PATH TO TGW DATA")
 # Get all the input file names
 file_list = list.files(pattern = "UTC") # list all hourly data
 file_list = sort(file_list) # sort the file names to rank from oldest data to newest
@@ -63,7 +62,6 @@ file_list = sort(file_list) # sort the file names to rank from oldest data to ne
 daily_stats_array <- calculate_daily_stats(file_list)
 
 # Write out the daily climate data
-save(daily_stats_array, file = paste0("C:/Users/wanh535/OneDrive - PNNL/Desktop/", 
-                                      "IM3/Heat Waves/Climate_data/historic/", 
-                                      "daily_stats_array_historic2020_2024.RData"))
+save(daily_stats_array, file = OUTPUT_FILE_PATH))
+
 
