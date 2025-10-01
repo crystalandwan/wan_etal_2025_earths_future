@@ -3,13 +3,13 @@ library(abind)
 library(data.table)
 
 # Set working directory
-setwd("C:/Users/wanh535/OneDrive - PNNL/Desktop/IM3/Heat Waves")
+setwd("PATH_TO_DATA")
 
 # Read in NERC shapefile
-NERC <- st_read("./NERC_Regions/NERC_Regions_Subregions.shp")
+NERC <- st_read("./NERC_Regions_Subregions.shp")
 
 # Read in county shapefile 
-counties <- st_read("./Counties/2020/tl_2020_us_county.shp")
+counties <- st_read("./tl_2020_us_county.shp")
 
 # Exclude non-CONUS counties
 counties <- counties[counties$STATEFP != "02" & counties$STATEFP != "15" &
@@ -83,7 +83,7 @@ for (i in c(1:length(unique_NERC))){
   NERC_average[i, , ] <- apply(target_data[, c(2:4), ], c(2, 3), mean)
 }
 
-save(NERC_average, file = "./Climate_data/historic/NERC_average.RData")
+save(NERC_average, file = "./NERC_average.RData")
 
 ### Average temperature across counties weighted by area
 joined_results$area <- st_area(joined_results)
@@ -108,7 +108,7 @@ for (i in c(1:length(unique_NERC))){
                                     function(x) weighted.mean(x, w = area))
 }
 
-save(NERC_average_area, file = "./Climate_data/historic/NERC_average_area.RData")
+save(NERC_average_area, file = "./NERC_average_area.RData")
 
 ### Average temperature across counties weighted by population
 # Read in population data
@@ -142,9 +142,8 @@ for (i in seq_along(unique_NERC)) {
                                                       function(x) weighted.mean(x, w = pop2019))
     
 }
-
-
-save(NERC_average_pop, file = "./Climate_data/historic/NERC_average_pop.RData")
+                                   
+save(NERC_average_pop, file = "./NERC_average_pop.RData")
 
 
 
@@ -225,6 +224,7 @@ save(NERC_average_pop, file = "./Climate_data/historic/NERC_average_pop.RData")
 # }
 #   
 # save(NERC_average_pop, file = "./Climate_data/historic/NERC_average_pop.RData")
+
 
 
 
