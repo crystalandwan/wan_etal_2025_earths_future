@@ -72,7 +72,7 @@ Fill in detailed info here or link to other documentation to thoroughly walkthro
 ## Reproduce my figures
 Use the scripts found in the `figures` directory to reproduce the figures used in this publication.
 
-| Figure Number(s) | Script Name | Description | How to Run |
+| Figure Number(s) | Script Name | Description |
 | --- | --- | --- |
 | 2, 3, 4, 5 | `Average_by_NERC.ipynb` | Plot extreme thermal event characteristics across different NERC subregions, including event intensity, event frequency, event duration, and event spatial coverage|
 | 3 | `generate_figure.py` | Description of figure, ie. "Shows how the mean and peak differences are calculated" |
