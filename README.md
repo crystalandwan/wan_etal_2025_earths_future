@@ -74,6 +74,7 @@ Use the scripts found in the `figures` directory to reproduce the figures used i
 
 | Figure Number(s) | Script Name | Description |
 | --- | --- | --- |
-| 2, 3, 4, 5 | `Average_by_NERC.ipynb` | Plot extreme thermal event characteristics across different NERC subregions, including event intensity, event frequency, event duration, and event spatial coverage|
-| 3 | `generate_figure.py` | Description of figure, ie. "Shows how the mean and peak differences are calculated" |
+| 2, 3, 4, 5 | `Average_by_NERC.ipynb` | Plot extreme thermal event characteristics across different NERC subregions based on MWA and MWP spatial aggregation methods, including event intensity, event frequency, event duration, and event spatial coverage.|
+| 6 | `Visualizations_of_events.py` | Plot the visualization of extreme thermal events in 1980 under event definition 4 based on MWP spatial aggregation method. |
+|S1, S2, S3, S4 | `Average_by_NERC_supplementary_document.ipynb` | Plot extreme thermal event characteristics across different NERC subregions based on SM spatial aggregation method, including event intensity, event frequency, event duration, and event spatial coverage.|
 
