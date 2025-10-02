@@ -35,11 +35,8 @@ Human, I.M. (2021). My input dataset name [Data set]. DataHub. https://doi.org/s
 _your input data references here_
 
 ### Output data
-Reference for each minted data source for your output data.  For example:
 
-Human, I.M. (2021). My output dataset name [Data set]. DataHub. https://doi.org/some-doi-number
-
-_your output data references here_
+Wan, H., Burleyson, C., & Voisin, N. (2025). Heat wave and cold snap event library under various technical choices for NERC subregions in the conterminous U.S. (1980 - 2024) [Data set]. American Geophysical Union Annual Meeting 2024 (AGU2024), Washington D.C. Zenodo. https://doi.org/10.5281/zenodo.15306963
 
 
 ## Contributing modeling software
