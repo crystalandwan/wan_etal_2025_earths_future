@@ -35,11 +35,11 @@ Jones, A.D., Rastogi, D., Vahmani, P. et al. Continental United States climate p
 Wan, H., Burleyson, C., & Voisin, N. (2025). Heat wave and cold snap event library under various technical choices for NERC subregions in the conterminous U.S. (1980 - 2024) [Data set]. American Geophysical Union Annual Meeting 2024 (AGU2024), Washington D.C. Zenodo. https://doi.org/10.5281/zenodo.15306963
 
 ## Reproduce my experiment
-Fill in detailed info here or link to other documentation to thoroughly walkthrough how to use the contents of this repository to reproduce your experiment. Below is an example.
+Clone this repository to get access to the R codes used to generate the extreme thermal event library datasets. You'll also need to download the input TGW temperature data from MSD-live (https://tgw-data.msdlive.org/). 
 |Script Name | Description |
 | --- | --- |
 |HourlyToDaily.R | Aggregate the county-level hourly TGW temperature data to daily |
-|"County_to_NERC.R | Aggregate county-level temperature data tp NERC subregion-level based on three spatial aggregation methods: SM, MWP, and MWA |
+|County_to_NERC.R | Aggregate county-level temperature data tp NERC subregion-level based on three spatial aggregation methods: SM, MWP, and MWA |
 |HeatWaveLibrary_NERC1.R | Generate NERC subregion-level heat wave library under event definition 1, 2, 3, 4, 5 and 9 |
 |HeatWaveLibrary_NERC2.R | Generate NERC subregion-level heat wave library under event definition 6, 7, 10 and 11|
 |HeatWaveLibrary_NERC3.R | Generate NERC subregion-level heat wave library under event definition 8 and 12|
@@ -52,23 +52,6 @@ Fill in detailed info here or link to other documentation to thoroughly walkthro
 |CS_1_spatial_coverage.R | Calculate spatial coverage of each cold snap event under event definition 1, 2, 3, 4, 5 and 9 |
 |CS_2_spatial_coverage.R | Calculate spatial coverage of each cold snap event under event definition 6, 7, 10 and 11 |
 |CS_3_spatial_coverage.R | Calculate spatial coverage of each cold snap event under event definition 8 and 12 |
-
-
-1. Install the software components required to conduct the experiment from [contributing modeling software](#contributing-modeling-software)
-2. Download and install the supporting [input data](#input-data) required to conduct the experiment
-3. Run the following scripts in the `workflow` directory to re-create this experiment:
-
-| Script Name | Description | How to Run |
-| --- | --- | --- |
-| `step_one.py` | Script to run the first part of my experiment | `python3 step_one.py -f /path/to/inputdata/file_one.csv` |
-| `step_two.py` | Script to run the second part of my experiment | `python3 step_two.py -o /path/to/my/outputdir` |
-
-4. Download and unzip the [output data](#output-data) from my experiment 
-5. Run the following scripts in the `workflow` directory to compare my outputs to those from the publication
-
-| Script Name | Description | How to Run |
-| --- | --- | --- |
-| `compare.py` | Script to compare my outputs to the original | `python3 compare.py --orig /path/to/original/data.csv --new /path/to/new/data.csv` |
 
 ## Reproduce my figures
 Use the scripts found in the `figures` directory to reproduce the figures used in this publication.
