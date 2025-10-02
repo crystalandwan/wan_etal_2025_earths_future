@@ -74,6 +74,7 @@ Use the scripts found in the `figures` directory to reproduce the figures used i
 
 | Figure Number(s) | Script Name | Description | How to Run |
 | --- | --- | --- | --- |
-| 1, 2 | `generate_plot.py` | Description of figure, ie. "Plots the difference between our two scenarios" | `python3 generate_plot.py -input /path/to/inputs -output /path/to/outuptdir` |
-| 3 | `generate_figure.py` | Description of figure, ie. "Shows how the mean and peak differences are calculated" | `python3 generate_figure.py -input /path/to/inputs -output /path/to/outuptdir` |
+| 2, 3, 4, 5 | `Average_by_NERC.ipynb` | Plot extreme thermal event characteristics across different NERC subregions, including 
+event intensity, event frequency, event duration, and event spatial coverage|
+| 3 | `generate_figure.py` | Description of figure, ie. "Shows how the mean and peak differences are calculated" |
 
