@@ -39,7 +39,9 @@ Clone this repository to get access to the R codes used to generate the extreme 
 |Script Name | Description |
 | --- | --- |
 |HourlyToDaily.R | Aggregate the county-level hourly TGW temperature data to daily |
-|County_to_NERC.R | Aggregate county-level temperature data tp NERC subregion-level based on three spatial aggregation methods: SM, MWP, and MWA |
+|County_to_NERC.R | Map each U.S. county to the corresponding NERC subregion. |
+|Calculate_pop_weights_in_NERC.R  | Converts county-level population to aggregation weights, which are then used for MWP spatial aggregation to aggregate county-level temperature to NERC subregion-level.
+|County_level_temperature_to_NERC_level | Aggregate county-level temperature data to NERC subregion- level based on three spatial aggregation methods, including SM, MWP, and MWA.
 |HeatWaveLibrary_NERC1.R | Generate NERC subregion-level heat wave library under event definition 1, 2, 3, 4, 5 and 9 |
 |HeatWaveLibrary_NERC2.R | Generate NERC subregion-level heat wave library under event definition 6, 7, 10 and 11|
 |HeatWaveLibrary_NERC3.R | Generate NERC subregion-level heat wave library under event definition 8 and 12|
