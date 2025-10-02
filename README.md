@@ -37,6 +37,7 @@ Wan, H., Burleyson, C., & Voisin, N. (2025). Heat wave and cold snap event libra
 ## Reproduce my experiment
 Fill in detailed info here or link to other documentation to thoroughly walkthrough how to use the contents of this repository to reproduce your experiment. Below is an example.
 |Script Name | Description |
+| --- | --- |
 |HourlyToDaily.R | Aggregate the county-level hourly TGW temperature data to daily |
 |"County_to_NERC.R | Aggregate county-level temperature data tp NERC subregion-level based on three spatial aggregation methods: SM, MWP, and MWA |
 |HeatWaveLibrary_NERC1.R | Generate NERC subregion-level heat wave library under event definition 1, 2, 3, 4, 5 and 9 |
