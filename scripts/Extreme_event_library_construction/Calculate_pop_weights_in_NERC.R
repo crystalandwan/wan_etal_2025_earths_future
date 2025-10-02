@@ -5,17 +5,17 @@ library(data.table)
 library(dplyr)
 library(sf)
 
-setwd("C:/Users/wanh535/OneDrive - PNNL/Desktop/IM3/Heat Waves")
+setwd("PATH_TO_DATA")
 
 ## Read in county-NERC relation shapefile
-counties <- st_read("./Climate_data/counties_in_NERC2020.shp")
+counties <- st_read("./counties_in_NERC2020.shp")
 # Create FIPS by removing the leading 0
 counties$FIPS <- counties$GEOID
 counties$FIPS <- gsub("^0+", "", counties$FIPS)
 counties$FIPS <- as.numeric(counties$FIPS)
 
 ## Read in population data
-pop <- fread("./pop_data/county_populations_2000_to_2019.csv")
+pop <- fread("./county_populations_2000_to_2019.csv")
 # Shannon county (FIPS 46113) in SD was renamed as Oglala Lakota county (FIPS 46102) in 2015.
 # In order to match the join with the county shapefile, rename the FIPS
 pop[pop$county_FIPS == 46113, "county_FIPS"] <- 46102
@@ -34,4 +34,5 @@ join <- join %>%
 ## Write out the results
 join2 <- st_drop_geometry(join)
 join2 <- join2[, c("FIPS", "pop_weight")]
-fwrite(join2, "./pop_data/county_pop2019_weights_in_NERC.csv")
+fwrite(join2, "./county_pop2019_weights_in_NERC.csv")
+
