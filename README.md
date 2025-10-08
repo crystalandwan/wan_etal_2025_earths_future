@@ -19,7 +19,7 @@ _your journal reference_
 ## Data reference
 
 ### Input data
-Jones, A.D., Rastogi, D., Vahmani, P. et al. Continental United States climate projections based on thermodynamic modification of historical weather. Sci Data 10, 664 (2023). https://doi.org/10.1038/s41597-023-02485-5.
+Burleyson, C., Thurber, T., & Vernon, C. (2023). Projections of Hourly Meteorology by County Based on the IM3/HyperFACETS Thermodynamic Global Warming (TGW) Simulations (v1.0.0) [Data set]. MSD-LIVE Data Repository. https://doi.org/10.57931/1960548
 
 ### Output data
 
