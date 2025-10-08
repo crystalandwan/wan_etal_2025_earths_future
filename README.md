@@ -23,7 +23,7 @@ Burleyson, C., Thurber, T., & Vernon, C. (2023). Projections of Hourly Meteorolo
 
 ### Output data
 
-Wan, H., Burleyson, C., & Voisin, N. (2025). Heat wave and cold snap event library under various technical choices for NERC subregions in the conterminous U.S. (1980 - 2024) [Data set]. American Geophysical Union Annual Meeting 2024 (AGU2024), Washington D.C. Zenodo. https://doi.org/10.5281/zenodo.15306963
+Wan, H., Burleyson, C., & Voisin, N. (2025). Heat wave and cold snap event library under various technical choices for NERC subregions in the conterminous U.S. (1980 - 2024) [Data set]. American Geophysical Union Annual Meeting 2024 (AGU2024), Washington D.C. Zenodo. https://doi.org/10.5281/zenodo.17298555
 
 ## Reproduce my experiment
 Clone this repository to get access to the R codes used to generate the extreme thermal event library datasets. You'll also need to download the input TGW temperature data from MSD-live (https://tgw-data.msdlive.org/). 
