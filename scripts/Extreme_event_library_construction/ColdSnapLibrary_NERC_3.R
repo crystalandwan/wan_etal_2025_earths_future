@@ -1,31 +1,58 @@
+# *****************************************************************************************
+# Title: Cold Snap Library Construction 3
+# Author: Heng Wan
+# Date: 10/20/2025
+# Purpose: Analyze temperature scenarios and identify cold snap events based on thresholds.
+# Description: This script processes NERC subregion-level temperature data under various 
+#              spatial aggregation scenarios to build cold snap libraries 
+#              based on cold snap definition 8 and 12
+# Requirements: Ensure that paths to data and output directories are properly set in the 
+#               configuration file (config.R).
+# *****************************************************************************************
+
+# Load required packages ----
 library(tools)
+library(here)
 
-# Set the working directory
-setwd("PATH_TO_NERC_LEVEL_CLIMATE_DATA")
+# Source the config file for paths ----
+config_path <- here::here("scripts", "Extreme_event_library_construction/config.R")
+if (!file.exists(config_path)) {
+  stop("The config file does not exist. Ensure the path to the config file is correct:", config_path)
+}
+source(config_path)
 
-# Create the directory for heat wave library files if it does not exist
-output_dir <- "cold_snap_library"
+# Ensure working directory ----
+if (!dir.exists(nerc_level_temp_data_path)) {
+  stop("The NERC temperature data path does not exist. Validate the 'nerc_level_temp_data_path' variable in your config.")
+}
+setwd(nerc_level_temp_data_path)
+
+# Create output directory ----
+output_dir <- here("Data", "cold_snap_library")
 if (!dir.exists(output_dir)) {
   dir.create(output_dir)
 }
 
-# Set the historical years range
-years <- 1980:2024
-
-# List of aggregation methods to process
-scenarios <- c("NERC_average.RData", "NERC_average_area.RData", "NERC_average_pop.RData")
-
-# Define thresholds and column index for temperature types
+# Define thresholds and column index for temperature types ----
 definitions <- list(
   list(threshold = 0.1, col_idx = 2, hw_id = 8), # max temperature
   list(threshold = 0.1, col_idx = 3, hw_id = 12) # min temperature
 )
 
-# Function to convert index to date
+
+# Utility Functions ----
+
+#' Convert index to date given the year.
+#' @param start_idx Numeric. Index of the start day in the year.
+#' @param year Numeric. The year for conversion.
+#' @return Date object.
 index_to_date <- function(start_idx, year) {
   as.Date(paste(year, "01", "01", sep="-")) + start_idx - 1
 }
 
+#' Calculate accumulated days from 1980 to ensure proper indexing.
+#' @param year Numeric. The target year.
+#' @return Numeric. Accumulated day count from 1980.
 # Function to calculate the start index of each year considering leap years
 calculate_days <- function(year) {
   if (year == 1980) { return(1) }
@@ -34,7 +61,10 @@ calculate_days <- function(year) {
   })) + 1
 }
 
-# Function to extract data for a specific year
+#' Extract daily temperature data for a specific year.
+#' @param data Numeric vector. Temperature data for all years.
+#' @param year Numeric. Year for extraction.
+#' @return Numeric vector. Temperature data for the specified year.
 extract_year_data <- function(data, year) {
   start_index <- calculate_days(year)
   is_leap_year <- (year %% 4 == 0 && year %% 100 != 0) || year %% 400 == 0
@@ -49,7 +79,12 @@ extract_year_data <- function(data, year) {
 }
 
 
-# Function to detect and record heat wave events
+#' Detect cold snap events based on rolling threshold criteria.
+#' @param temps Numeric vector. Daily temperature data.
+#' @param thresholds Numeric vector. Rolling thresholds for each day.
+#' @param t_min Numeric vector. Minimum temperature data for each day.
+#' @param year Numeric. Year for the analysis.
+#' @return Data frame. Cold snap events identified for the year.
 detect_cold_snaps <- function(temps, thresholds, Tmin, year) {
   # For non-leap years, delete the final threshold value
   if(length(temps) == 365){
@@ -83,6 +118,14 @@ detect_cold_snaps <- function(temps, thresholds, Tmin, year) {
   return(events_df)
 }
 
+
+# Main Processing ----
+
+# Set the historical years range
+years <- 1980:2024
+
+# List of scenarios to process
+scenarios <- c("NERC_average.RData", "NERC_average_area.RData", "NERC_average_pop.RData")
 
 # Process each scenario
 for (scenario in scenarios) {

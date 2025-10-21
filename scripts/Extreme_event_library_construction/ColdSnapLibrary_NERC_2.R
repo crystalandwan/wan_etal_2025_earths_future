@@ -1,19 +1,39 @@
+# *****************************************************************************************
+# Title: Cold Snap Library Construction 2
+# Author: Heng Wan
+# Date: 10/20/2025
+# Purpose: Analyze temperature scenarios and identify cold snap events based on thresholds.
+# Description: This script processes NERC subregion-level temperature data under various 
+#              spatial aggregation scenarios to build cold snap libraries 
+#              based on cold snap definition 6, 7, 10, and 11
+# Requirements: Ensure that paths to data and output directories are properly set in the 
+#               configuration file (config.R).
+# *****************************************************************************************
+
+# Load required packages ----
 library(tools)
+library(here)
 
-# Set the working directory
-setwd("PATH_TO_NERC_LEVEL_CLIMATE_DATA")
+# Source the config file for paths ----
+config_path <- here::here("scripts", "Extreme_event_library_construction/config.R")
+if (!file.exists(config_path)) {
+  stop("The config file does not exist. Ensure the path to the config file is correct:", config_path)
+}
+source(config_path)
 
-# List of scenarios to process
-scenarios <- c("NERC_average.RData", "NERC_average_area.RData", "NERC_average_pop.RData")
+# Ensure working directory ----
+if (!dir.exists(nerc_level_temp_data_path)) {
+  stop("The NERC temperature data path does not exist. Check the 'nerc_level_temp_data_path' variable in your config.")
+}
+setwd(nerc_level_temp_data_path)
 
-
-# Create the directory for heat wave library files if it does not exist
-output_dir <- "cold_snap_library"
+# Create output directory ----
+output_dir <- here("Data", "cold_snap_library")
 if (!dir.exists(output_dir)) {
   dir.create(output_dir)
 }
 
-# Define thresholds and column index for temperature types
+# Define thresholds and column index for temperature types ----
 definitions <- list(
   list(threshold1 = 0.025, threshold2 = 0.19, col_idx = 2, hw_id = 6), # max temperature
   list(threshold1 = 0.1, threshold2 = 0.25, col_idx = 2, hw_id = 7), # max temperature
@@ -21,11 +41,19 @@ definitions <- list(
   list(threshold1 = 0.1, threshold2 = 0.25, col_idx = 3, hw_id = 11) # min temperature
 )
 
-# Function to convert index to date
+# Utility Functions ----
+
+#' Convert index to date given the year.
+#' @param start_idx Numeric. Index of the start day in the year.
+#' @param year Numeric. The year for conversion.
+#' @return Date object.
 index_to_date <- function(start_idx, year) {
   as.Date(paste(year, "01", "01", sep="-")) + start_idx - 1
 }
 
+#' Calculate accumulated days from 1980 to ensure proper indexing.
+#' @param year Numeric. The target year.
+#' @return Numeric. Accumulated day count from 1980.
 # Function to calculate the start index of each year considering leap years
 calculate_days <- function(year) {
   if (year == 1980) { return(1) }
@@ -34,8 +62,14 @@ calculate_days <- function(year) {
   })) + 1
 }
 
-# Function to detect heat waves and evaluate them
-detect_cold_snaps <- function(temps, Tmin, threshold1, threshold2, year) {
+#' Identify cold snap events based on temperature thresholds.
+#' @param temps Numeric vector. Temperature data for the year.
+#' @param t_min Numeric vector. Minimum temperature data for the year.
+#' @param threshold1 Numeric. Cold snap threshold 1.
+#' @param threshold2 Numeric. Cold snap threshold 2.
+#' @param year Numeric. Year of the data.
+#' @return Data frame of identified cold snap events.
+detect_cold_snaps <- function(temps, t_min, threshold1, threshold2, year) {
   min_days <- 3
   
   # Construct a data frame to store the events
@@ -76,8 +110,8 @@ detect_cold_snaps <- function(temps, Tmin, threshold1, threshold2, year) {
         events_df <- rbind(events_df, data.frame(
           start_date = index_to_date(start, year),
           end_date = index_to_date(end, year),
-          centroid_date = index_to_date(start + which.min(Tmin[start:end]) - 1, year),
-          lowest_temperature = min(Tmin[start:end]), 
+          centroid_date = index_to_date(start + which.min(t_min[start:end]) - 1, year),
+          lowest_temperature = min(t_min[start:end]), 
           duration = end - start + 1))
       }
       i <- end + 1
@@ -88,14 +122,20 @@ detect_cold_snaps <- function(temps, Tmin, threshold1, threshold2, year) {
   return(events_df)
 }
 
-# Function to check for overlap between two events
+#' Check for overlap between two events.
+#' @param event1 Data frame row. First event.
+#' @param event2 Data frame row. Second event.
+#' @return Logical. True if overlap exists.
 check_overlap <- function(event1, event2) {
   # Check if event1 and event2 overlap
   overlap <- (event1$start_date <= event2$end_date) && (event1$end_date >= event2$start_date)
   return(overlap)
 }
 
-# Function to merge two overlapping events
+#' Merge two overlapping events into one.
+#' @param event1 Data frame row. First event.
+#' @param event2 Data frame row. Second event to be merged.
+#' @return Data frame. Merged event.
 merge_events <- function(event1, event2) {
   # Determine the start and end dates of the merged event
   start_date <- min(event1$start_date, event2$start_date)
@@ -123,13 +163,19 @@ merge_events <- function(event1, event2) {
   return(merged_event)
 }
 
-# Process each scenario and record heat wave events
+
+# Main processing ----
+
+# List of scenarios to process
+scenarios <- c("NERC_average.RData", "NERC_average_area.RData", "NERC_average_pop.RData")
+
+# Process each scenario
 for (scenario in scenarios) {
   load(scenario)
   NERC_temp_data <- eval(as.name(file_path_sans_ext(scenario)))
   
   for (def in definitions) {
-    Tmin <- NERC_temp_data[, 3, ]
+    t_min <- NERC_temp_data[, 3, ]
     temps <- NERC_temp_data[, def$col_idx, ]
     thresholds1 <- apply(temps, 1, quantile, probs=def$threshold1)
     thresholds2 <- apply(temps, 1, quantile, probs=def$threshold2)
@@ -141,9 +187,9 @@ for (scenario in scenarios) {
         start_idx <- calculate_days(year)
         end_idx <- start_idx + ifelse((year %% 4 == 0 && year %% 100 != 0) || year %% 400 == 0, 365, 364)
         NERC_temps <- temps[NERC_idx, start_idx:end_idx]
-        NERC_Tmin <- Tmin[NERC_idx, start_idx:end_idx]
+        NERC_t_min <- t_min[NERC_idx, start_idx:end_idx]
         
-        events <- detect_cold_snaps(NERC_temps, NERC_Tmin, thresholds1[NERC_idx], thresholds2[NERC_idx], year)
+        events <- detect_cold_snaps(NERC_temps, NERC_t_min, thresholds1[NERC_idx], thresholds2[NERC_idx], year)
         
         if (nrow(events) > 0) {  # Check if events is not empty
           events$NERC_ID <- paste0("NERC", rownames(NERC_temp_data)[NERC_idx])

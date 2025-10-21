@@ -1,12 +1,33 @@
+# *****************************************************************************************
+# Title: Heat Wave Spatial Coverage Calculation 2
+# Author: Heng Wan
+# Date: 10/20/2025
+# Purpose: Calculate NERC subregion-level spatial coverage of heat wave events under various
+#          heat wave definitions.
+# Description: This script processes county-level temperature data to identify county-level 
+#              heat wave events under definition 6, 7, 10, and 11. The spatial coverage of 
+#              NERC subregion-level heat wave event is calculated as the percentage of 
+#              counties experiencing that heat wave event within the target NERC subregion.
+# Requirements: Ensure paths to temperature and event files are correctly set in the 
+#               configuration file (config.R).
+# ******************************************************************************************
+
+# Load Required Libraries ----
 library(data.table)
 library(sf)
+library(dplyr)
 library(abind)
 library(parallel)
+library(here)
 
-# Set the working directory
-setwd("PATH_TO_COUNTY_LEVEL_CLIMATE_DATA")
+# Source Configuration File ----
+config_path <- here::here("scripts", "Extreme_event_library_construction/config.R")
+if (!file.exists(config_path)) {
+  stop("The configuration file does not exist. Ensure the correct path:", config_path)
+}
+source(config_path)
 
-# Define thresholds and column index for temperature types
+# Define thresholds and column index for temperature types ----
 definitions <- list(
   list(threshold1 = 0.975, threshold2 = 0.81, col_idx = 2, hw_id = 6), # max temperature
   list(threshold1 = 0.9, threshold2 = 0.75, col_idx = 2, hw_id = 7), # max temperature
@@ -14,21 +35,26 @@ definitions <- list(
   list(threshold1 = 0.9, threshold2 = 0.75, col_idx = 3, hw_id = 11) # min temperature
 )
 
-# Define a function to calculate the threshold temperature based on different temp aggregation method
+# Utility Functions ----
+
+#' Calculate temperature thresholds for different temperature aggregation methods.
+#' @param input_string String. Name of the temperature aggregation method (e.g., "area", "pop").
+#' @param def List. Threshold definition (percentile and column index).
+#' @return Numeric vector. Threshold temperatures for NERC regions.
 calculate_thresholds <- function(input_string, def) {
   if (grepl("area", input_string, ignore.case = TRUE)) {
-    load("./historic/NERC_average_area.RData")
+    load(paste0("nerc_level_temp_data_path", "NERC_average_area.RData"))
     NERC_temp <- NERC_average_area[, def$col_idx, ]
     thresholds1 <- apply(NERC_temp, 1, quantile, probs = def$threshold1)
     thresholds2 <- apply(NERC_temp, 1, quantile, probs = def$threshold2)
     
   } else if (grepl("pop", input_string, ignore.case = TRUE)) {
-    load("./historic/NERC_average_pop.RData")
+    load(paste0("nerc_level_temp_data_path", "NERC_average_pop.RData"))
     NERC_temp <- NERC_average_pop[, def$col_idx, ]
     thresholds1 <- apply(NERC_temp, 1, quantile, probs = def$threshold1)
     thresholds2 <- apply(NERC_temp, 1, quantile, probs = def$threshold2)
   } else {
-    load("./historic/NERC_average.RData")
+    load(paste0("nerc_level_temp_data_path", "NERC_average.RData"))
     NERC_temp <- NERC_average[, def$col_idx, ]
     thresholds1 <- apply(NERC_temp, 1, quantile, probs = def$threshold1)
     thresholds2 <- apply(NERC_temp, 1, quantile, probs = def$threshold2)
@@ -36,7 +62,9 @@ calculate_thresholds <- function(input_string, def) {
   return (list(thresholds1, thresholds2))
 }
 
-# Function to calculate days since 1980-01-01
+#' Calculate days passed since 1980-01-01 for a given date.
+#' @param date_str String. Target date string in "YYYY-MM-DD" format.
+#' @return Numeric. Days elapsed since "1980-01-01".
 date_to_days_since_1980 <- function(date_str) {
   # Define the start date
   start_date <- as.Date("1980-01-01")
@@ -48,7 +76,11 @@ date_to_days_since_1980 <- function(date_str) {
   return(delta + 1)  # +1 to make the count start from 1
 }
 
-# Function to check if the event is satisfied for a county
+#' Check if a heat wave event criteria is satisfied for a county.
+#' @param county_temps Numeric vector. Daily temperature values for a county.
+#' @param threshold1 Numeric. Lower temperature threshold.
+#' @param threshold2 Numeric. Upper temperature threshold.
+#' @return Logical. TRUE if the county satisfies all heat wave criteria, FALSE otherwise.
 check_for_event <- function(county_temps, threshold1, threshold2) {
   #Check if all temperatures are greater than threshold 2:
   all_above_threshold2 <- all(county_temps > threshold2)
@@ -73,40 +105,49 @@ check_for_event <- function(county_temps, threshold1, threshold2) {
   return(all_above_threshold2 && three_plus_consecutive_days && average_above_threshold1)
 }
 
-# Read in NERC-county file
-counties <- st_read("counties_in_NERC2020.shp")
-counties <- st_drop_geometry(counties)
-counties <- counties[, c("GEOID", "ID")]
-counties$GEOID <- gsub("^0+", "", counties$GEOID) # Remove the leading 0 in the county ID
-counties$ID <- paste0("NERC", counties$ID)
+# Prepare Input Data ----
 
-# Read in county-level daily temperature data
-load("./historic/daily_stats_array_historic1980_2019.RData")
-daily_stats_1980_2019 <- daily_stats_array
+# Load county mapping file
+if (!file.exists(county_nerc_path)) {
+  stop("County-NERC mapping file does not exist:", county_nerc_path)
+}
 
-load("./historic/daily_stats_array_historic2020_2024.RData")
-daily_stats_2020_2024 <- daily_stats_array
+counties <- st_read(county_nerc_path) %>%
+  st_drop_geometry() %>%
+  dplyr::select(GEOID, ID) %>%
+  mutate(
+    GEOID = gsub("^0+", "", GEOID),  # Remove leading zeros in county IDs
+    ID = paste0("NERC", ID)
+  )
 
-daily_stats_array <- abind(daily_stats_1980_2019, daily_stats_2020_2024, along = 3) # Merge the two datasets for complete years
+# Load county-level temperature data
+if (!file.exists(county_level_temp_data_path)) {
+  stop("County-level temperature data file does not exist:", county_level_temp_data_path)
+}
 
+load(county_level_temp_data_path)  # County-level data is stored in `daily_stats_array`.
 
-# List all definitions
-event_defs <- list.files("./historic/heat_wave_library",
-                         pattern = "def6.csv|def7.csv|def10.csv|def11.csv")
+# Identify Event Definition Files ----
+event_def_files <- list.files(
+  here::here("Data", "heat_wave_library"),
+  pattern = "def6.csv|def7.csv|def10.csv|def11.csv",
+  full.names = TRUE
+)
 
-
-# Set up parallel backend
+# Set Up Parallel Processing ----
 no_cores <- detectCores() - 1
 cl <- makeCluster(no_cores)
+
 clusterEvalQ(cl, {
   library(data.table)
 })
+
 clusterExport(cl, list("calculate_thresholds", "date_to_days_since_1980", 
                        "check_for_event", "daily_stats_array", "counties", 
                        "definitions", "event_defs"))
 
 
-# Parallel computing 
+# Main Processing ----
 results <- parLapply(cl, event_defs, function(event_def) {
   # Obtain the event definition ID (ranges from 1 to 12)
   hw_id <- as.numeric(gsub("[^0-9]", "", event_def))
@@ -124,7 +165,7 @@ results <- parLapply(cl, event_defs, function(event_def) {
   thresholds2 <- thresholds_list[[2]]
   
   # Read in the target NERC-level event file
-  NERC_event <- fread(paste0("./historic/heat_wave_library/", event_def))
+  NERC_event <- fread(paste0(here("Data", "heat_wave_library"), event_def))
   # Initiate the spatial coverage column
   NERC_event$spatial_coverage <- -100
   
@@ -153,9 +194,10 @@ results <- parLapply(cl, event_defs, function(event_def) {
     spatial_coverage <- sum(event_results)/nrow(target_temp) * 100
     NERC_event[i, "spatial_coverage"] <- spatial_coverage
   }
-  fwrite(NERC_event, "PATH_TO_SAVE_DATA")
+  fwrite(NERC_event, here("Data", "heat_wave_library/With_spatial_coverage/event_def"))
 })
 
+stopCluster(cl)  # Stop the cluster
 
 
 

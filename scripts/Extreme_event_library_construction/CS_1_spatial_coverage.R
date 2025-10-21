@@ -1,12 +1,33 @@
+# *****************************************************************************************
+# Title: Cold Snap Spatial Coverage Calculation 1
+# Author: Heng Wan
+# Date: 10/20/2025
+# Purpose: Calculate NERC subregion-level spatial coverage of cold snap events under various
+#          cold snap definitions.
+# Description: This script processes county-level temperature data to identify county-level 
+#              cold snap events under definition 1, 2, 3, 4, 5, and 9. The spatial coverage of 
+#              NERC subregion-level cold snap event is calculated as the percentage of 
+#              counties experiencing that cold snap event within the target NERC subregion.
+# Requirements: Ensure paths to temperature and event files are correctly set in the 
+#               configuration file (config.R).
+# ******************************************************************************************
+
+# Load Required Libraries ----
 library(data.table)
 library(sf)
+library(dplyr)
 library(abind)
 library(parallel)
+library(here)
 
-# Set the working directory
-setwd("PATH_TO_COUNTY_LEVEL_CLIMATE_DATA")
+# Source Configuration File ----
+config_path <- here::here("scripts", "Extreme_event_library_construction/config.R")
+if (!file.exists(config_path)) {
+  stop("The configuration file does not exist. Ensure the correct path:", config_path)
+}
+source(config_path)
 
-# Define thresholds and column index for temperature types
+# Define thresholds and column index for temperature types ----
 definitions <- list(
   list(threshold = 0.10, col_idx = 1, hw_id = 1), # 10th percentile, mean temperature
   list(threshold = 0.05, col_idx = 1, hw_id = 2), # 5th percentile, mean temperature
@@ -16,26 +37,33 @@ definitions <- list(
   list(threshold = 0.10, col_idx = 3, hw_id = 9)  # 10th percentile, min temperature
 )
 
-# Define a function to calculate the threshold temperature based on different temp aggregation method
+# Utility Functions ----
+
+#' Calculate temperature thresholds for different temperature aggregation methods.
+#' @param input_string String. Name of the temperature aggregation method (e.g., "area", "pop").
+#' @param def List. Threshold definition (percentile and column index).
+#' @return Numeric vector. Threshold temperatures for NERC regions.
 calculate_thresholds <- function(input_string, def) {
   if (grepl("area", input_string, ignore.case = TRUE)) {
-    load("./historic/NERC_average_area.RData")
+    load(paste0("nerc_level_temp_data_path", "NERC_average_area.RData"))
     NERC_temp <- NERC_average_area[, def$col_idx, ]
     thresholds <- apply(NERC_temp, 1, quantile, probs = def$threshold)
     
   } else if (grepl("pop", input_string, ignore.case = TRUE)) {
-    load("./historic/NERC_average_pop.RData")
+    load(paste0("nerc_level_temp_data_path", "NERC_average_pop.RData"))
     NERC_temp <- NERC_average_pop[, def$col_idx, ]
     thresholds <- apply(NERC_temp, 1, quantile, probs = def$threshold)
   } else {
-    load("./historic/NERC_average.RData")
+    load(paste0("nerc_level_temp_data_path", "NERC_average.RData"))
     NERC_temp <- NERC_average[, def$col_idx, ]
     thresholds <- apply(NERC_temp, 1, quantile, probs = def$threshold)
   }
   return (thresholds)
 }
 
-# Function to calculate days since 1980-01-01
+#' Calculate days passed since 1980-01-01 for a given date.
+#' @param date_str String. Target date string in "YYYY-MM-DD" format.
+#' @return Numeric. Days elapsed since "1980-01-01".
 date_to_days_since_1980 <- function(date_str) {
   # Define the start date
   start_date <- as.Date("1980-01-01")
@@ -47,7 +75,10 @@ date_to_days_since_1980 <- function(date_str) {
   return(delta + 1)  # +1 to make the count start from 1
 }
 
-# Function to check if the event is satisfied for a county
+#' Check if a cold snap event criteria is satisfied for a county.
+#' @param county_temps Numeric vector. Daily temperatures for a county.
+#' @param threshold Numeric. Cold snap temperature threshold.
+#' @return Logical. TRUE if event is satisfied, FALSE if not.
 check_for_event <- function(county_temps, threshold) {
   # Find days below the threshold
   low_temp_days <- county_temps < threshold
@@ -62,37 +93,48 @@ check_for_event <- function(county_temps, threshold) {
   any(low_temp_periods >= 2)
 }
 
-# Read in NERC-county file
-counties <- st_read("counties_in_NERC2020.shp")
-counties <- st_drop_geometry(counties)
-counties <- counties[, c("GEOID", "ID")]
-counties$GEOID <- gsub("^0+", "", counties$GEOID) # Remove the leading 0 in the county ID
-counties$ID <- paste0("NERC", counties$ID)
+# Prepare Input Data ----
+
+# Load county mapping file
+if (!file.exists(county_nerc_path)) {
+  stop("County-NERC mapping file does not exist:", county_nerc_path)
+}
+
+counties <- st_read(county_nerc_path) %>%
+  st_drop_geometry() %>%
+  dplyr::select(GEOID, ID) %>%
+  mutate(
+    GEOID = gsub("^0+", "", GEOID),  # Remove leading zeros in county IDs
+    ID = paste0("NERC", ID)
+  )
 
 # Load county-level temperature data
-load("./historic/daily_stats_array_historic1980_2019.RData")
-daily_stats_1980_2019 <- daily_stats_array
+if (!file.exists(county_level_temp_data_path)) {
+  stop("County-level temperature data file does not exist:", county_level_temp_data_path)
+}
 
-load("./historic/daily_stats_array_historic2020_2024.RData")
-daily_stats_2020_2024 <- daily_stats_array
+load(county_level_temp_data_path)  # County-level data is stored in `daily_stats_array`.
 
-daily_stats_array <- abind(daily_stats_1980_2019, daily_stats_2020_2024, along = 3) # Merge the two datasets for complete years
+# Identify Event Definition Files ----
+event_def_files <- list.files(
+  here::here("Data", "cold_snap_library"),
+  pattern = "def1.csv|def2.csv|def3.csv|def4.csv|def5.csv|def9.csv",
+  full.names = TRUE
+)
 
-# List all definitions
-event_defs <- list.files("./historic/cold_snap_library", 
-                         pattern = "def1.csv|def2.csv|def3.csv|def4.csv|def5.csv|def9.csv")
-
-# Set up parallel backend
+# Set Up Parallel Processing ----
 no_cores <- detectCores() - 1
 cl <- makeCluster(no_cores)
+
 clusterEvalQ(cl, {
   library(data.table)
 })
+
 clusterExport(cl, list("calculate_thresholds", "date_to_days_since_1980", 
                        "check_for_event", "daily_stats_array", "counties", 
                        "definitions", "event_defs"))
 
-# Parallel computing 
+# Main Processing ----
 results <- parLapply(cl, event_defs, function(event_def) {
   # Obtain the event definition ID (ranges from 1 to 12)
   hw_id <- as.numeric(gsub("[^0-9]", "", event_def))
@@ -108,7 +150,7 @@ results <- parLapply(cl, event_defs, function(event_def) {
   thresholds <- calculate_thresholds(event_def, def)
   
   # Read in the target NERC-level event file
-  NERC_event <- fread(paste0("./historic/cold_snap_library/", event_def))
+  NERC_event <- fread(paste0(here("Data", "cold_snap_library"), event_def))
   # Initiate the spatial coverage column
   NERC_event$spatial_coverage <- -100
   
@@ -136,8 +178,10 @@ results <- parLapply(cl, event_defs, function(event_def) {
     spatial_coverage <- sum(event_results)/nrow(target_temp) * 100
     NERC_event[i, "spatial_coverage"] <- spatial_coverage
   }
-  fwrite(NERC_event, "PATH_TO_SAVE_DATA")
+  fwrite(NERC_event, here("Data", "cold_snap_library/With_spatial_coverage/event_def"))
 })
+
+stopCluster(cl)  # Stop the cluster
 
 
 

@@ -1,31 +1,57 @@
+# *****************************************************************************************
+# Title: Heat Wave Library Construction 3
+# Author: Heng Wan
+# Date: 10/20/2025
+# Purpose: Analyze temperature scenarios and identify heat wave events based on thresholds.
+# Description: This script processes NERC subregion-level temperature data under various 
+#              spatial aggregation scenarios to build heat wave libraries 
+#              based on heat wave definition 8 and 12
+# Requirements: Ensure that paths to data and output directories are properly set in the 
+#               configuration file (config.R).
+# *****************************************************************************************
+
+# Load required packages ----
 library(tools)
+library(here)
 
-# Set the working directory
-setwd("PATH_TO_NERC_LEVEL_CLIMATE_DATA")
+# Source the config file for paths ----
+config_path <- here::here("scripts", "Extreme_event_library_construction/config.R")
+if (!file.exists(config_path)) {
+  stop("The config file does not exist. Ensure the path to the config file is correct:", config_path)
+}
+source(config_path)
 
-# Create the directory for heat wave library files if it does not exist
-output_dir <- "heat_wave_library"
+# Ensure working directory ----
+if (!dir.exists(nerc_level_temp_data_path)) {
+  stop("The NERC temperature data path does not exist. Validate the 'nerc_level_temp_data_path' variable in your config.")
+}
+setwd(nerc_level_temp_data_path)
+
+# Create output directory ----
+output_dir <- here("Data", "heat_wave_library")
 if (!dir.exists(output_dir)) {
   dir.create(output_dir)
 }
 
-# Set the historical years range
-years <- 1980:2024
-
-# List of aggregation methods to process
-scenarios <- c("NERC_average.RData", "NERC_average_area.RData", "NERC_average_pop.RData")
-
-# Define thresholds and column index for temperature types
+# Define thresholds and column index for temperature types ----
 definitions <- list(
   list(threshold = 0.9, col_idx = 2, hw_id = 8), # max temperature
   list(threshold = 0.9, col_idx = 3, hw_id = 12) # min temperature
 )
 
-# Function to convert index to date
+# Utility Functions ----
+
+#' Convert index to date given the year.
+#' @param start_idx Numeric. Index of the start day in the year.
+#' @param year Numeric. The year for conversion.
+#' @return Date object.
 index_to_date <- function(start_idx, year) {
   as.Date(paste(year, "01", "01", sep="-")) + start_idx - 1
 }
 
+#' Calculate accumulated days from 1980 to ensure proper indexing.
+#' @param year Numeric. The target year.
+#' @return Numeric. Accumulated day count from 1980.
 # Function to calculate the start index of each year considering leap years
 calculate_days <- function(year) {
   if (year == 1980) { return(1) }
@@ -34,7 +60,10 @@ calculate_days <- function(year) {
   })) + 1
 }
 
-# Function to extract data for a specific year
+#' Extract daily temperature data for a specific year.
+#' @param data Numeric vector. Temperature data for all years.
+#' @param year Numeric. Year for extraction.
+#' @return Numeric vector. Temperature data for the specified year.
 extract_year_data <- function(data, year) {
   start_index <- calculate_days(year)
   is_leap_year <- (year %% 4 == 0 && year %% 100 != 0) || year %% 400 == 0
@@ -48,9 +77,13 @@ extract_year_data <- function(data, year) {
   return(year_data)
 }
 
-
-# Function to detect and record heat wave events
-detect_heat_waves <- function(temps, thresholds, Tmax, year) {
+#' Detect heat wave events based on rolling threshold criteria.
+#' @param temps Numeric vector. Daily temperature data.
+#' @param thresholds Numeric vector. Rolling thresholds for each day.
+#' @param t_max Numeric vector. Maximum temperature data for each day.
+#' @param year Numeric. Year for the analysis.
+#' @return Data frame.Heat wave events identified for the year.
+detect_heat_waves <- function(temps, thresholds, t_max, year) {
   # For non-leap years, delete the final threshold value
   if(length(temps) == 365){
     thresholds = thresholds[1:365]
@@ -73,8 +106,8 @@ detect_heat_waves <- function(temps, thresholds, Tmax, year) {
       events_df <- rbind(events_df, data.frame(
         start_date = index_to_date(start_idx, year),
         end_date = index_to_date(end_idx, year),
-        centroid_date = index_to_date(start_idx + which.max(Tmax[start_idx:end_idx]) - 1, year),
-        highest_temperature = max(Tmax[start_idx:end_idx]), 
+        centroid_date = index_to_date(start_idx + which.max(t_max[start_idx:end_idx]) - 1, year),
+        highest_temperature = max(t_max[start_idx:end_idx]), 
         duration = end_idx - start_idx + 1
       ))
     }
@@ -83,6 +116,13 @@ detect_heat_waves <- function(temps, thresholds, Tmax, year) {
   return(events_df)
 }
 
+# Main Processing ----
+
+# Set the historical years range
+years <- 1980:2024
+
+# List of scenarios to process
+scenarios <- c("NERC_average.RData", "NERC_average_area.RData", "NERC_average_pop.RData")
 
 # Process each scenario
 for (scenario in scenarios) {
@@ -95,8 +135,8 @@ for (scenario in scenarios) {
     for (NERC_idx in 1:dim(NERC_temp_data)[1]) {
       # Extract all the daily temperature data for the target NERC
       temps <- NERC_temp_data[NERC_idx, def$col_idx, ]
-      # Get all the daily Tmax data
-      Tmax <- NERC_temp_data[NERC_idx, 2, ]
+      # Get all the daily t_max data
+      t_max <- NERC_temp_data[NERC_idx, 2, ]
       # Create a list to hold each year's data
       yearly_data <- lapply(years, function(year) extract_year_data(temps, year))
       # Convert list to a data frame
@@ -117,8 +157,8 @@ for (scenario in scenarios) {
       
       for (year in years) {
         NERC_temps <- extract_year_data(temps, year)
-        NERC_Tmax <- extract_year_data(Tmax, year)
-        events <- detect_heat_waves(NERC_temps, thresholds, NERC_Tmax, year)
+        NERC_t_max <- extract_year_data(t_max, year)
+        events <- detect_heat_waves(NERC_temps, thresholds, NERC_t_max, year)
         
         if (nrow(events) > 0) {  # Check if events is not empty
           events$NERC_ID <- paste0("NERC", rownames(NERC_temp_data)[NERC_idx])

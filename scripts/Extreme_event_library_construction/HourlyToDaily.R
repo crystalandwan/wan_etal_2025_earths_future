@@ -1,8 +1,25 @@
+# *****************************************************************************************
+# Title: Daily Temperature Statistics Calculation
+# Author: Heng Wan
+# Date: 10/20/2025
+# Purpose: Aggregate hourly temperature data into daily statistics (mean, max, min) for each
+#          county.
+# Description: Extracts hourly temperature data for each county, calculates daily statistics
+#              (mean, max, min), and saves results as a 3D array for downstream analysis.
+# Requirements: Ensure paths to input files and output files are correctly configured.
+# *****************************************************************************************
+
+# Load Required Libraries ----
 library(dplyr)
 library(data.table)
 library(doParallel)
+library(here)
 
-# Function to read and calculate daily temperature statistics for each county
+# Define Utility Functions ----
+
+#' Calculate daily temperature statistics (mean, max, min) for each county.
+#' @param files Character vector. List of hourly temperature file paths.
+#' @return 3D array. Dimensions: Counties x (FIPS + Stats) x Dates.
 calculate_daily_stats <- function(files) {
   unique_dates <- unique(substr(files, 1, 10))  # Extract unique dates from file names
   num_stats <- 3  # mean, max, and min
@@ -52,17 +69,41 @@ calculate_daily_stats <- function(files) {
   return(daily_stats_array)
 }
 
-# Set working directory
-setwd("PATH_TO_TGW_DATA")
+# Main Execution ----
+
+# Define Input and Output Paths
+input_dir <- here("Data", "historic")  # Directory containing hourly temperature data
+output_file <- here("Data", "daily_stats_array.RData")  # Output file path for daily statistics array
+
+# Validate Input Directory
+if (!dir.exists(input_dir)) {
+  stop("Input directory does not exist: ", input_dir)
+}
+setwd(input_dir)  # Set working directory to input directory
+
 # Get all the input file names
 file_list = list.files(pattern = "UTC") # list all hourly data
 file_list = sort(file_list) # sort the file names to rank from oldest data to newest
 
-# Apply the function to the file_list to aggregate hourly temperature data to daily min/max/mean
+if (length(file_list) == 0) {
+  stop("No files found in the specified directory: ", input_dir)
+}
+
+# Calculate Daily Statistics
 daily_stats_array <- calculate_daily_stats(file_list)
 
-# Write out the daily climate data
-save(daily_stats_array, file = "OUTPUT_FILE_PATH")
+# Validate Output Directory
+output_dir <- dirname(output_file)
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+}
 
+# Save the Array to File
+tryCatch({
+  save(daily_stats_array, file = output_file)
+  message("Daily statistics successfully saved to: ", output_file)
+}, error = function(e) {
+  stop("Failed to save daily statistics to file: ", output_file, "\nError: ", e$message)
+})
 
 
